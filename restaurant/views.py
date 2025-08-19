@@ -1,3 +1,9 @@
 from django.shortcuts import render
+from .models import MenuCategory, MenuItem
 
-# Create your views here.
+def menu_list(request):
+    categories = MenuCategory.objects.prefetch_related('menuitem_set').all()
+    context = {
+        'categories': categories,
+    }
+    return render(request, 'restaurant/menu_list.html', context)

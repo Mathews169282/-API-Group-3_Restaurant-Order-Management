@@ -1,0 +1,56 @@
+{% extends "Restaurant_Order_App/base.html" %}
+{% load static %}
+{% block title %}Dashboard · Restaurant Orders{% endblock %}
+
+{% block content %}
+
+
+<div class="position-relative overflow-hidden rounded-4 p-4 p-lg-5 mb-4"
+     style="background: linear-gradient(135deg, rgba(13,110,253,.08), rgba(32,201,151,.08));">
+  <div class="row align-items-center g-4">
+    <div class="col-lg-7">
+      <h1 class="display-5 fw-bold mb-2">Explore Our Menu</h1>
+      <p class="lead mb-4">Browse dishes, update items, and create orders faster from one place.</p>
+      <div class="d-flex gap-2">
+        
+        <a class="btn btn-primary btn-lg" href="{% url 'menu_list' %}">View Menu</a>
+        <a class="btn btn-outline-primary btn-lg" href="{% url 'order_create' %}">Create Order</a>
+      </div>
+    </div>
+    <div class="col-lg-5 text-center">
+      
+      <img src="{% static 'assets/images/img2.jpg' %}" class="img-fluid" alt="Menu graphic" style="max-height:260px;">
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-4">
+    <div class="card p-3">
+      <h5 class="mb-1">Total Orders</h5>
+      <div class="display-6">{{ stats.total_orders|default:"0" }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card p-3">
+      <h5 class="mb-1">Pending</h5>
+      <div class="display-6">{{ stats.pending|default:"0" }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card p-3">
+      <h5 class="mb-1">Completed</h5>
+      <div class="display-6">{{ stats.completed|default:"0" }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="card p-4 mt-4">
+  <div class="d-flex justify-content-between align-items-center">
+    <h4 class="mb-0">Recent Orders</h4>
+    <a class="btn btn-primary" href="{% url 'order_create' %}">Create Order</a>
+  </div>
+  <hr>
+  {% include "Hotel_Order_App/_order_table.html" with orders=recent_orders only %}
+</div>
+{% endblock %}
