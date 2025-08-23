@@ -1,0 +1,66 @@
+{% extends 'restaurant/base.html' %}
+
+{% block title %}Login - Restaurant{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h2 class="card-title text-center mb-4">Sign In</h2>
+                    
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            Your email and password didn't match. Please try again.
+                        </div>
+                    {% endif %}
+
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %n                        
+                        <div class="mb-3">
+                            <label for="id_username" class="form-label">Email address</label>
+                            <input type="email" name="username" class="form-control" id="id_username" 
+                                   value="{{ form.username.value|default:'' }}" required autofocus>
+                            <div class="invalid-feedback">
+                                Please provide a valid email.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_password" class="form-label">Password</label>
+                            <input type="password" name="password" class="form-control" id="id_password" required>
+                            <div class="form-text">
+                                <a href="{% url 'password_reset' %}">Forgot your password?</a>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 mb-3">Sign In</button>
+                        
+                        <div class="text-center">
+                            <p class="mb-0">Don't have an account? <a href="{% url 'restaurant:register' %}">Sign up</a></p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Client-side form validation
+(function () {
+  'use strict'
+  var forms = document.querySelectorAll('.needs-validation')
+  Array.prototype.slice.call(forms).forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+      if (!form.checkValidity()) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
+      form.classList.add('was-validated')
+    }, false)
+  })
+})()
+</script>
+{% endblock %}

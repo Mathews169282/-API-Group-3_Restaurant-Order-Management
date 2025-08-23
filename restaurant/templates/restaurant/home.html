@@ -1,0 +1,80 @@
+{% extends 'restaurant/base.html' %}
+{% load static %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section text-white text-center py-5">
+    <div class="container py-5">
+        <h1 class="display-4 fw-bold mb-4">Welcome to Our Restaurant</h1>
+        <p class="lead mb-4">Experience the finest cuisine in town</p>
+        <a href="{% url 'restaurant:menu' %}" class="btn btn-primary btn-lg px-4 me-2">View Menu</a>
+        <a href="#reservation" class="btn btn-outline-light btn-lg px-4">Reserve a Table</a>
+    </div>
+</section>
+
+<!-- Featured Categories -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <h2 class="text-center mb-5">Our Specialties</h2>
+        <div class="row g-4">
+            {% for category in featured_categories %}
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="category-image" style="height: 200px; overflow: hidden;">
+                        <img src="{{ category.image.url|default:'/static/images/default-category.jpg' }}" 
+                             class="img-fluid w-100 h-100" 
+                             alt="{{ category.name }}"
+                             style="object-fit: cover;">
+                    </div>
+                    <div class="card-body text-center">
+                        <h3 class="h5">{{ category.name }}</h3>
+                        <a href="{% url 'restaurant:menu' %}?category={{ category.slug }}" class="btn btn-outline-primary">View Menu</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- About Us -->
+<section class="py-5" id="about">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6 mb-4 mb-lg-0">
+                <h2 class="mb-4">Our Story</h2>
+                <p>Our restaurant was founded with a passion for creating memorable dining experiences. We source the finest ingredients and prepare each dish with care.</p>
+            </div>
+            <div class="col-lg-6">
+                <img src="https://images.unsplash.com/photo-1414235077428-338989f6da9f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" 
+                     class="img-fluid rounded shadow" 
+                     alt="Our Restaurant">
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.hero-section {
+    background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), 
+                url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80');
+    background-size: cover;
+    background-position: center;
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.category-image {
+    transition: transform 0.3s ease;
+}
+
+.card:hover .category-image {
+    transform: scale(1.05);
+}
+</style>
+{% endblock %}

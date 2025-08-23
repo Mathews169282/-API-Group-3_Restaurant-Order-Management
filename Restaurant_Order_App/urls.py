@@ -2,6 +2,8 @@
 from django.urls import path
 from . import views
 
+app_name = 'api'  # This matches the namespace in the main urls.py
+
 urlpatterns = [
     path('', views.Home, name='home'),
     path('orders/', views.Order_list, name='order_list'),

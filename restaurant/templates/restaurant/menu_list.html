@@ -1,86 +1,487 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Restaurant Menu</title>
-    <style>
-        .menu-container {
-            font-family: Arial, sans-serif;
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .category {
-            margin-bottom: 30px;
-            background: #f9f9f9;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .category h2 {
-            color: #333;
-            border-bottom: 2px solid #e0e0e0;
-            padding-bottom: 10px;
-            margin-top: 0;
-        }
-        .menu-items {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-        .menu-item {
-            background: white;
-            padding: 15px;
-            border-radius: 6px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        .menu-item h3 {
-            margin: 0 0 5px 0;
-            color: #2c3e50;
-        }
-        .price {
-            font-weight: bold;
-            color: #e74c3c;
-            font-size: 1.1em;
-        }
-        .description {
-            color: #7f8c8d;
-            font-size: 0.9em;
-            margin-top: 5px;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .header h1 {
-            color: #2c3e50;
-            margin-bottom: 10px;
-        }
-    </style>
-</head>
-<body>
-    <div class="menu-container">
-        <div class="header">
-            <h1>Our Delicious Menu</h1>
-            <p>Experience authentic Kenyan cuisine</p>
+{% extends 'restaurant/base.html' %}
+{% load static %}
+
+{% block content %}
+<!-- Hero Section with Background Image -->
+<section class="hero-section position-relative text-white py-5 mb-5">
+    <div class="container py-5">
+        <div class="row py-5">
+            <div class="col-lg-8 mx-auto text-center">
+                <h1 class="display-4 fw-bold mb-4">Our Delicious Menu</h1>
+                <p class="lead mb-4">Savor the finest dishes prepared by our master chefs</p>
+                <div class="search-box mx-auto" style="max-width: 600px;">
+                    <input type="text" id="searchMenu" class="form-control form-control-lg" placeholder="Search for dishes...">
+                </div>
+            </div>
         </div>
-        
+    </div>
+    <div class="overlay"></div>
+</section>
+<!-- Menu Tabs -->
+<div class="container my-5">
+    <ul class="nav nav-pills mb-4 justify-content-center" id="menuTabs" role="tablist">
         {% for category in categories %}
-        <div class="category">
-            <h2>{{ category.name }}</h2>
-            <div class="menu-items">
-                {% for item in category.menuitem_set.all %}
-                <div class="menu-item">
-                    <h3>{{ item.name }}</h3>
-                    <div class="price">KSh {{ item.price }}</div>
-                    {% if item.description %}
-                    <div class="description">{{ item.description }}</div>
-                    {% endif %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {% if forloop.first %}active{% endif %}" 
+                    id="{{ category.name|slugify }}-tab" 
+                    data-bs-toggle="pill" 
+                    data-bs-target="#{{ category.name|slugify }}" 
+                    type="button" 
+                    role="tab" 
+                    aria-controls="{{ category.name|slugify }}" 
+                    aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
+                {{ category.name }}
+            </button>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="menuTabsContent">
+        {% for category in categories %}
+        <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" 
+             id="{{ category.name|slugify }}" 
+             role="tabpanel" 
+             aria-labelledby="{{ category.name|slugify }}-tab">
+            
+            <div class="row g-4">
+                {% for item in category.items.all %}
+                <div class="col-md-6 col-lg-4 menu-item" data-category="{{ category.name|lower }}">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="position-relative">
+                            <img src="https://source.unsplash.com/random/400x300/?{{ item.name }},food" 
+                                 class="card-img-top" 
+                                 alt="{{ item.name }}"
+                                 style="height: 200px; object-fit: cover;">
+                            <div class="price-tag bg-primary text-white px-3 py-1 rounded-pill position-absolute top-2 end-2">
+                                Ksh {{ item.price }}
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">{{ item.name }}</h5>
+                            <p class="card-text text-muted">{{ item.description|default:"" }}</p>
+                        </div>
+                        <div class="card-footer bg-transparent border-top-0">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="decreaseQuantity('{{ item.id }}')">-</button>
+                                    <span id="quantity-{{ item.id }}" class="px-3">0</span>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="increaseQuantity('{{ item.id }}')">+</button>
+                                </div>
+                                <button class="btn btn-primary btn-sm" onclick="addToCart('{{ item.id }}', '{{ item.name }}', {{ item.price }})">
+                                    <i class="fas fa-cart-plus me-1"></i> Add
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 {% endfor %}
             </div>
         </div>
         {% endfor %}
     </div>
-</body>
-</html>
+</div>
+
+<!-- Cart Sidebar -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="cartOffcanvas" aria-labelledby="cartOffcanvasLabel">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="cartOffcanvasLabel">Your Order</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div id="cartItems">
+            <!-- Cart items will be added here dynamically -->
+            <p class="text-muted text-center my-5">Your cart is empty</p>
+        </div>
+        <div class="mt-auto border-top pt-3">
+            <div class="d-flex justify-content-between fw-bold mb-3">
+                <span>Total:</span>
+                <span id="cartTotal">Ksh 0.00</span>
+            </div>
+            <button class="btn btn-primary w-100" onclick="proceedToCheckout()">
+                Proceed to Checkout
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="toast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body" id="toastMessage">
+                Item added to cart!
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+<style>
+.hero-section {
+    background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), 
+                url('https://source.unsplash.com/random/1920x1080/?restaurant,food');
+    background-size: cover;
+    background-position: center;
+    margin-bottom: 50px;
+    border-radius: 0 0 20px 20px;
+    overflow: hidden;
+}
+
+.hero-section .search-box {
+    max-width: 600px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+.nav-pills .nav-link {
+    color: #333;
+    font-weight: 500;
+    padding: 10px 20px;
+    margin: 0 5px;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+    background-color: #f8f9fa;
+}
+
+.nav-pills .nav-link.active {
+    background-color: #0d6efd;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+}
+
+.card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+    overflow: hidden;
+    border-radius: 12px;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+}
+
+.card-img-top {
+    transition: transform 0.5s ease;
+}
+
+.card:hover .card-img-top {
+    transform: scale(1.05);
+}
+
+.btn-outline-secondary {
+    border-color: #dee2e6;
+}
+
+.offcanvas {
+    width: 400px;
+    max-width: 100%;
+}
+
+.toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1100;
+}
+
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 60px 0;
+    }
+    
+    .hero-section h1 {
+        font-size: 2rem;
+    }
+    
+    .nav-pills .nav-link {
+        padding: 8px 15px;
+        font-size: 0.9rem;
+    }
+}
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Enable Bootstrap tooltips
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl)
+});
+// Cart functionality
+let cart = [];
+const toast = new bootstrap.Toast(document.getElementById('toast'));
+
+function showToast(message) {
+    document.getElementById('toastMessage').textContent = message;
+    toast.show();
+}
+
+function updateCart() {
+    const cartItems = document.getElementById('cartItems');
+    const cartTotal = document.getElementById('cartTotal');
+    
+    if (cart.length === 0) {
+        cartItems.innerHTML = '<p class="text-muted text-center my-5">Your cart is empty</p>';
+        cartTotal.textContent = 'Ksh 0.00';
+        return;
+    }
+    
+    let itemsHtml = '';
+    let total = 0;
+    
+    cart.forEach(item => {
+        const itemTotal = item.price * item.quantity;
+        total += itemTotal;
+        
+        itemsHtml += `
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h6 class="mb-0">${item.name}</h6>
+                    <small class="text-muted">Ksh ${item.price} x ${item.quantity}</small>
+                </div>
+                <div class="d-flex align-items-center">
+                    <span class="fw-bold me-3">Ksh ${itemTotal.toFixed(2)}</span>
+                    <button class="btn btn-sm btn-outline-danger" onclick="removeFromCart('${item.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    cartItems.innerHTML = itemsHtml;
+    cartTotal.textContent = `Ksh ${total.toFixed(2)}`;
+}
+
+function addToCart(id, name, price) {
+    const existingItem = cart.find(item => item.id === id);
+    
+    if (existingItem) {
+        existingItem.quantity++;
+    } else {
+        cart.push({
+            id: id,
+            name: name,
+            price: price,
+            quantity: 1
+        });
+    }
+    
+    updateCart();
+    showToast('Item added to cart!');
+    
+    // Update quantity display
+    const quantityElement = document.getElementById(`quantity-${id}`);
+    if (quantityElement) {
+        quantityElement.textContent = cart.find(item => item.id === id).quantity;
+    }
+}
+
+function removeFromCart(id) {
+    cart = cart.filter(item => item.id !== id);
+    updateCart();
+    
+    // Update quantity display
+    const quantityElement = document.getElementById(`quantity-${id}`);
+    if (quantityElement) {
+        quantityElement.textContent = '0';
+    }
+}
+
+function increaseQuantity(id) {
+    const item = cart.find(item => item.id === id);
+    if (item) {
+        item.quantity++;
+    } else {
+        const name = document.querySelector(`[onclick*="addToCart('${id}'"]`).getAttribute('data-name');
+        const price = parseFloat(document.querySelector(`[onclick*="addToCart('${id}'"]`).getAttribute('data-price'));
+        cart.push({ id, name, price, quantity: 1 });
+    }
+    
+    updateCart();
+    document.getElementById(`quantity-${id}`).textContent = 
+        cart.find(item => item.id === id)?.quantity || 0;
+}
+
+function decreaseQuantity(id) {
+    const item = cart.find(item => item.id === id);
+    if (item) {
+        if (item.quantity > 1) {
+            item.quantity--;
+        } else {
+            cart = cart.filter(item => item.id !== id);
+        }
+        updateCart();
+        document.getElementById(`quantity-${id}`).textContent = 
+            cart.find(item => item.id === id)?.quantity || 0;
+    }
+}
+
+function proceedToCheckout() {
+    if (cart.length === 0) {
+        showToast('Your cart is empty!');
+        return;
+    }
+    
+    // Here you would typically redirect to checkout or show a checkout form
+    showToast('Proceeding to checkout...');
+    // window.location.href = '/checkout/';
+}
+
+// Search functionality
+document.getElementById('searchMenu').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const menuItems = document.querySelectorAll('.menu-item');
+    
+    menuItems.forEach(item => {
+        const itemName = item.querySelector('.card-title').textContent.toLowerCase();
+        const itemDesc = item.querySelector('.card-text').textContent.toLowerCase();
+        
+        if (itemName.includes(searchTerm) || itemDesc.includes(searchTerm)) {
+            item.style.display = 'block';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}
+        </div>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="row mb-5">
+        <div class="col-md-8 mx-auto">
+            <div class="input-group">
+                <input type="text" class="form-control form-control-lg" placeholder="Search menu items...">
+                <button class="btn btn-primary" type="button">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+            <div class="d-flex flex-wrap gap-2 mt-3 justify-content-center">
+                <button class="btn btn-outline-secondary active">All</button>
+                {% for cat in categories %}
+                <button class="btn btn-outline-secondary">{{ cat.name }}</button>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Menu Categories -->
+    {% for category in categories %}
+    <div class="category-section my-5" id="category-{{ category.id }}">
+        <h2 class="category-title">{{ category.name }}</h2>
+        <div class="row">
+            {% for item in category.items.all %}
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="position-relative">
+                        <img src="{{ item.image.url|default:'/static/images/default-food.jpg' }}" 
+                             class="card-img-top" 
+                             alt="{{ item.name }}"
+                             style="height: 200px; object-fit: cover;">
+                        {% if item.is_popular %}
+                        <span class="position-absolute top-0 start-0 bg-warning text-dark px-2 py-1 m-2 rounded">
+                            <i class="fas fa-star"></i> Popular
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title mb-0">{{ item.name }}</h5>
+                            <span class="badge bg-primary">KSh {{ item.price }}</span>
+                        </div>
+                        <p class="card-text text-muted small flex-grow-1">
+                            {{ item.description|default:"Delicious item from our kitchen" }}
+                        </p>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <div class="input-group" style="width: 120px;">
+                                <button class="btn btn-outline-secondary btn-sm minus-btn" type="button">-</button>
+                                <input type="number" class="form-control form-control-sm text-center" value="1" min="1">
+                                <button class="btn btn-outline-secondary btn-sm plus-btn" type="button">+</button>
+                            </div>
+                            <button class="btn btn-primary btn-sm add-to-cart" data-item-id="{{ item.id }}">
+                                <i class="fas fa-cart-plus"></i> Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info">No items available in this category.</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Call to Action -->
+    <div class="text-center my-5 py-5">
+        <h2 class="mb-4">Ready to order?</h2>
+        <p class="lead mb-4">Login or create an account to start your order</p>
+        <div class="d-flex justify-content-center gap-3">
+            {% if user.is_authenticated %}
+                <a href="#" class="btn btn-primary btn-lg">View Cart</a>
+                <a href="#" class="btn btn-outline-primary btn-lg">Checkout</a>
+            {% else %}
+                <a href="{% url 'restaurant:register' %}" class="btn btn-primary btn-lg">Create Account</a>
+                <a href="{% url 'restaurant:login' %}" class="btn btn-outline-primary btn-lg">Sign In</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    // Quantity buttons
+    $('.plus-btn').click(function() {
+        const input = $(this).siblings('input');
+        input.val(parseInt(input.val()) + 1);
+    });
+
+    $('.minus-btn').click(function() {
+        const input = $(this).siblings('input');
+        const value = parseInt(input.val());
+        if (value > 1) {
+            input.val(value - 1);
+        }
+    });
+
+    // Add to cart functionality
+    $('.add-to-cart').click(function() {
+        const itemId = $(this).data('item-id');
+        const quantity = $(this).closest('.card-body').find('input').val();
+        
+        // Here you would typically make an AJAX call to add the item to the cart
+        console.log(`Added ${quantity} of item ${itemId} to cart`);
+        
+        // Show a success message
+        const toast = `
+            <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+                <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="toast-header">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <strong class="me-auto">Added to Cart</strong>
+                        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                    <div class="toast-body">
+                        Item has been added to your cart!
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        $('body').append(toast);
+        
+        // Remove the toast after 3 seconds
+        setTimeout(() => {
+            $('.toast').remove();
+        }, 3000);
+    });
+});
+</script>
+{% endblock %}

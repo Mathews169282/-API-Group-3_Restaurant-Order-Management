@@ -1,0 +1,524 @@
+{% extends 'restaurant/base.html' %}
+{% load static %}
+
+{% block content %}
+<!-- Cart data for JavaScript -->
+<script id="cart-data" type="application/json">
+    {{ cart_data|safe }}
+</script>
+
+<!-- Hero Section with Background Image -->
+<section class="hero-section position-relative text-white py-5 mb-5">
+    <div class="container py-5">
+        <div class="row py-5">
+            <div class="col-lg-8 mx-auto text-center">
+                <h1 class="display-4 fw-bold mb-4">Our Delicious Menu</h1>
+                <p class="lead mb-4">Savor the finest dishes prepared by our master chefs</p>
+                <div class="search-box mx-auto" style="max-width: 600px;">
+                    <input type="text" id="searchMenu" class="form-control form-control-lg" placeholder="Search for dishes...">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="overlay"></div>
+</section>
+
+<!-- Menu Tabs -->
+<div class="container my-5">
+    <ul class="nav nav-pills mb-4 justify-content-center" id="menuTabs" role="tablist">
+        {% for category in categories %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {% if forloop.first %}active{% endif %}" 
+                    id="category-{{ category.id }}-tab" 
+                    data-bs-toggle="pill" 
+                    data-bs-target="#category-{{ category.id }}" 
+                    type="button" 
+                    role="tab" 
+                    aria-controls="category-{{ category.id }}" 
+                    aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
+                {{ category.name }}
+            </button>
+        </li>
+        {% empty %}
+        <div class="alert alert-warning">No menu categories found. Please add some menu items in the admin.</div>
+        {% endfor %}
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="menuTabsContent">
+        {% for category in categories %}
+        <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" 
+             id="category-{{ category.id }}" 
+             role="tabpanel" 
+             aria-labelledby="category-{{ category.id }}-tab">
+            
+            <div class="row g-4">
+                {% for item in category.items %}
+                <div class="col-md-6 col-lg-4 menu-item" data-category="{{ category.name|lower }}">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="position-relative">
+                            <div class="menu-item-image" style="height: 200px; overflow: hidden; position: relative;">
+                                {% with 'menu_items/'|add:item.name|lower|cut:' '|add:'.jpg' as image_path %}
+                                {% with 'menu_items/'|add:item.name|lower|cut:' '|add:'.webp' as webp_path %}
+                                <img 
+                                    src="{{ MEDIA_URL }}{{ image_path }}" 
+                                    onerror="this.onerror=null; this.src='{{ MEDIA_URL }}{{ webp_path }}';"
+                                    class="img-fluid w-100 h-100" 
+                                    alt="{{ item.name }}"
+                                    style="object-fit: cover; transition: transform 0.3s ease;"
+                                    loading="lazy"
+                                >
+                                <script>
+                                    document.currentScript.previousElementSibling.onerror = function() {
+                                        this.src = '{{ MEDIA_URL }}menu_items/default_food.jpg';
+                                    };
+                                </script>
+                                {% endwith %}
+                                {% endwith %}
+                                <div class="price-tag bg-primary text-white px-3 py-1 rounded-pill position-absolute top-2 end-2">
+                                    Ksh {{ item.price|floatformat:2 }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body d-flex flex-column" style="min-height: 120px;">
+                            <h5 class="card-title mb-2">{{ item.name }}</h5>
+                            {% if item.description %}
+                            <p class="card-text text-muted small flex-grow-1">{{ item.description|truncatewords:20 }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer bg-transparent border-top-0">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="decreaseQuantity('{{ item.id }}')">-</button>
+                                    <span id="quantity-{{ item.id }}" class="px-3">0</span>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="increaseQuantity('{{ item.id }}')">+</button>
+                                </div>
+                                <button class="btn btn-primary btn-sm" onclick="addToCart('{{ item.id }}', '{{ item.name }}', {{ item.price }})">
+                                    <i class="fas fa-cart-plus me-1"></i> Add
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="alert alert-info">No items available in this category.</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Cart Sidebar -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="cartOffcanvas" aria-labelledby="cartOffcanvasLabel">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="cartOffcanvasLabel">Your Order</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div id="cartItems">
+            <!-- Cart items will be added here dynamically -->
+            <p class="text-muted text-center my-5">Your cart is empty</p>
+        </div>
+        <div class="mt-auto border-top pt-3">
+            <div class="d-flex justify-content-between fw-bold mb-3">
+                <span>Total:</span>
+                <span id="cartTotal">Ksh 0.00</span>
+            </div>
+            <button class="btn btn-primary w-100" onclick="proceedToCheckout()">
+                Proceed to Checkout
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="toast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body" id="toastMessage">
+                Item added to cart!
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+<style>
+.hero-section {
+    background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), 
+                url('https://source.unsplash.com/random/1920x1080/?restaurant,food');
+    background-size: cover;
+    background-position: center;
+    margin-bottom: 50px;
+    border-radius: 0 0 20px 20px;
+    overflow: hidden;
+}
+
+.hero-section .search-box {
+    max-width: 600px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+.nav-pills .nav-link {
+    color: #333;
+    font-weight: 500;
+    padding: 10px 20px;
+    margin: 0 5px;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+    background-color: #f8f9fa;
+}
+
+.nav-pills .nav-link.active {
+    background-color: #0d6efd;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+}
+
+.card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+    overflow: hidden;
+    border-radius: 12px;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+}
+
+.card-img-top {
+    transition: transform 0.5s ease;
+}
+
+.card:hover .card-img-top {
+    transform: scale(1.05);
+}
+
+.btn-outline-secondary {
+    border-color: #dee2e6;
+}
+
+.offcanvas {
+    width: 400px;
+    max-width: 100%;
+}
+
+.toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1100;
+}
+
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 60px 0;
+    }
+    
+    .hero-section h1 {
+        font-size: 2rem;
+    }
+    
+    .nav-pills .nav-link {
+        padding: 8px 15px;
+        font-size: 0.9rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Cart functionality
+const toast = new bootstrap.Toast(document.getElementById('toast'));
+
+function showToast(message) {
+    document.getElementById('toastMessage').textContent = message;
+    toast.show();
+}
+
+// CSRF token for AJAX requests
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+const csrftoken = getCookie('csrftoken');
+
+// Add to cart function
+function addToCart(itemId, itemName, itemPrice) {
+    fetch('{% url "restaurant:add_to_cart" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            'item_id': itemId,
+            'quantity': 1
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Update the cart data in the hidden element
+            document.getElementById('cart-data').textContent = JSON.stringify(data.cart_data);
+            // Update the cart display
+            updateCartDisplay();
+            showToast('Item added to cart!');
+        } else {
+            showToast(data.message || 'Error adding item to cart');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error adding item to cart');
+    });
+}
+
+// Update cart display with data from server
+function updateCartDisplay(cartData) {
+    const cartItems = document.getElementById('cartItems');
+    const cartTotal = document.getElementById('cartTotal');
+    const cartBadge = document.getElementById('cartBadge');
+    
+    if (!cartData || Object.keys(cartData.items).length === 0) {
+        cartItems.innerHTML = '<p class="text-muted text-center my-5">Your cart is empty</p>';
+        cartTotal.textContent = 'Ksh 0.00';
+        if (cartBadge) cartBadge.textContent = '0';
+        return;
+    }
+    
+    let itemsHtml = '';
+    let total = 0;
+    let itemCount = 0;
+    
+    // Convert items object to array
+    const itemsArray = Object.values(cartData.items);
+    
+    itemsArray.forEach(item => {
+        const itemTotal = parseFloat(item.price) * parseInt(item.quantity);
+        total += itemTotal;
+        itemCount += parseInt(item.quantity);
+        
+        itemsHtml += `
+            <div class="d-flex justify-content-between align-items-center mb-3" id="cart-item-${item.id}">
+                <div>
+                    <h6 class="mb-0">${item.name}</h6>
+                    <small class="text-muted">Ksh ${parseFloat(item.price).toFixed(2)} x ${item.quantity}</small>
+                </div>
+                <div class="d-flex align-items-center">
+                    <span class="fw-bold me-3">Ksh ${itemTotal.toFixed(2)}</span>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-secondary" onclick="updateCartItem('${item.id}', ${parseInt(item.quantity) - 1})">-</button>
+                        <span class="px-2">${item.quantity}</span>
+                        <button class="btn btn-outline-secondary" onclick="updateCartItem('${item.id}', ${parseInt(item.quantity) + 1})">+</button>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger ms-2" onclick="removeFromCart('${item.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    cartItems.innerHTML = itemsHtml;
+    cartTotal.textContent = `Ksh ${total.toFixed(2)}`;
+    if (cartBadge) cartBadge.textContent = itemCount;
+    
+    // Update all quantity displays
+    itemsArray.forEach(item => {
+        const qtyElement = document.getElementById(`quantity-${item.id}`);
+        if (qtyElement) {
+            qtyElement.textContent = item.quantity;
+        }
+    });
+}
+
+// Remove item from cart
+function removeFromCart(itemId) {
+    fetch('{% url "restaurant:remove_from_cart" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            'item_id': itemId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Update the cart data in the hidden element
+            document.getElementById('cart-data').textContent = JSON.stringify(data.cart_data);
+            // Update the cart display
+            updateCartDisplay();
+            showToast('Item removed from cart');
+        } else {
+            showToast(data.message || 'Error removing item');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error removing item from cart');
+    });
+}
+
+// Update item quantity in cart
+function updateCartItem(itemId, newQuantity) {
+    if (newQuantity < 0) return;
+    
+    fetch('{% url "restaurant:update_cart_item" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            'item_id': itemId,
+            'quantity': newQuantity
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Update the cart data in the hidden element
+            document.getElementById('cart-data').textContent = JSON.stringify(data.cart_data);
+            // Update the cart display
+            updateCartDisplay();
+        } else {
+            showToast(data.message || 'Error updating item');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error updating item in cart');
+    });
+}
+
+// Render cart from cart data
+function renderCart(cartData) {
+    const cartItems = document.getElementById('cartItems');
+    const cartTotal = document.getElementById('cartTotal');
+    const cartBadge = document.getElementById('cartBadge');
+    
+    if (!cartData || !cartData.items || Object.keys(cartData.items).length === 0) {
+        cartItems.innerHTML = '<p class="text-muted text-center my-5">Your cart is empty</p>';
+        cartTotal.textContent = 'Ksh 0.00';
+        if (cartBadge) cartBadge.textContent = '0';
+        return;
+    }
+    
+    let itemsHtml = '';
+    let total = 0;
+    let itemCount = 0;
+    
+    // Convert items object to array
+    const itemsArray = Object.values(cartData.items);
+    
+    itemsArray.forEach(item => {
+        const itemTotal = parseFloat(item.price) * parseInt(item.quantity);
+        total += itemTotal;
+        itemCount += parseInt(item.quantity);
+        
+        itemsHtml += `
+            <div class="d-flex justify-content-between align-items-center mb-3" id="cart-item-${item.id}">
+                <div>
+                    <h6 class="mb-0">${item.name}</h6>
+                    <small class="text-muted">Ksh ${parseFloat(item.price).toFixed(2)} x ${item.quantity}</small>
+                </div>
+                <div class="d-flex align-items-center">
+                    <span class="fw-bold me-3">Ksh ${itemTotal.toFixed(2)}</span>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-secondary" onclick="updateCartItem('${item.id}', ${parseInt(item.quantity) - 1})">-</button>
+                        <span class="px-2">${item.quantity}</span>
+                        <button class="btn btn-outline-secondary" onclick="updateCartItem('${item.id}', ${parseInt(item.quantity) + 1})">+</button>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger ms-2" onclick="removeFromCart('${item.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    cartItems.innerHTML = itemsHtml;
+    cartTotal.textContent = `Ksh ${total.toFixed(2)}`;
+    if (cartBadge) cartBadge.textContent = itemCount;
+    
+    // Update all quantity displays in the menu
+    itemsArray.forEach(item => {
+        const qtyElement = document.getElementById(`quantity-${item.id}`);
+        if (qtyElement) {
+            qtyElement.textContent = item.quantity;
+        }
+    });
+}
+
+// Update cart display with current data
+function updateCartDisplay() {
+    try {
+        const cartData = JSON.parse(document.getElementById('cart-data').textContent);
+        renderCart(cartData);
+    } catch (error) {
+        console.error('Error parsing cart data:', error);
+        showToast('Error loading cart');
+    }
+}
+
+// Proceed to checkout
+function proceedToCheckout() {
+    // Check if cart is empty
+    const cartBadge = document.getElementById('cartBadge');
+    if (!cartBadge || parseInt(cartBadge.textContent) === 0) {
+        showToast('Your cart is empty!');
+        return;
+    }
+    
+    // Redirect to checkout page
+    window.location.href = '{% url "restaurant:checkout" %}';
+}
+
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize cart display
+    updateCartDisplay();
+    
+    // Search functionality
+    const searchInput = document.getElementById('searchMenu');
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const menuItems = document.querySelectorAll('.menu-item');
+            
+            menuItems.forEach(item => {
+                const itemName = item.querySelector('.card-title')?.textContent?.toLowerCase() || '';
+                const itemDesc = item.querySelector('.card-text')?.textContent?.toLowerCase() || '';
+                
+                if (itemName.includes(searchTerm) || itemDesc.includes(searchTerm)) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    }
+});
+</script>
+{% endblock %}
