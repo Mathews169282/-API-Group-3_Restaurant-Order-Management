@@ -1,0 +1,22 @@
+<table class="table table-hover align-middle">
+  <thead>
+    <tr>
+      <th>#</th><th>Customer</th><th>Room</th><th>Status</th><th>Total</th><th>Created</th><th></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for o in orders %}
+    <tr>
+      <td>{{ o.id }}</td>
+      <td>{{ o.customer_name }}</td>
+      <td>{{ o.room_number }}</td>
+      <td><span class="badge text-bg-secondary">{{ o.status }}</span></td>
+      <td>{{ o.total|floatformat:2 }}</td>
+      <td>{{ o.created_at|date:"M d, Y H:i" }}</td>
+      <td><a class="btn btn-sm btn-outline-primary" href="{% url 'order_detail' o.id %}">View</a></td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="7" class="text-center text-muted">No orders found.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
