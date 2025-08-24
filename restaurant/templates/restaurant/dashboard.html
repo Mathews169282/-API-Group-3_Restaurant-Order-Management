@@ -15,7 +15,7 @@
                         <p class="mb-0">Here's what's happening with your orders.</p>
                     </div>
                     <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                        <a href="{% url 'restaurant:modern_menu' %}" class="btn btn-light btn-lg">
+                        <a href="{% url 'restaurant:menu' %}" class="btn btn-light btn-lg">
                             <i class="fas fa-utensils me-2"></i>Order Now
                         </a>
                     </div>
@@ -111,7 +111,7 @@
                         <div class="text-center p-5">
                             <i class="fas fa-shopping-bag fa-3x text-muted mb-3"></i>
                             <p class="text-muted">You haven't placed any orders yet.</p>
-                            <a href="{% url 'restaurant:modern_menu' %}" class="btn btn-primary">Start Ordering</a>
+                            <a href="{% url 'restaurant:menu' %}" class="btn btn-primary">Start Ordering</a>
                         </div>
                     {% endif %}
                 </div>
@@ -128,7 +128,7 @@
                     {% if favorite_categories %}
                         <div class="list-group list-group-flush">
                             {% for category in favorite_categories %}
-                            <a href="{% url 'restaurant:modern_menu' %}#category-{{ category.id }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <a href="{% url 'restaurant:menu' %}#category-{{ category.id }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                                 {{ category.name }}
                                 <span class="badge bg-primary rounded-pill">{{ category.order_count }}</span>
                             </a>
@@ -150,7 +150,7 @@
                 </div>
                 <div class="card-body p-0">
                     <div class="list-group list-group-flush">
-                        <a href="{% url 'restaurant:modern_menu' %}" class="list-group-item list-group-item-action">
+                        <a href="{% url 'restaurant:menu' %}" class="list-group-item list-group-item-action">
                             <i class="fas fa-utensils me-2 text-primary"></i> Browse Menu
                         </a>
                         <a href="#" class="list-group-item list-group-item-action">
@@ -159,9 +159,12 @@
                         <a href="#" class="list-group-item list-group-item-action">
                             <i class="fas fa-cog me-2 text-primary"></i> Account Settings
                         </a>
-                        <a href="{% url 'restaurant:logout' %}" class="list-group-item list-group-item-action text-danger">
-                            <i class="fas fa-sign-out-alt me-2"></i> Logout
-                        </a>
+                        <form method="post" action="{% url 'restaurant:logout' %}" class="d-inline w-100">
+                            {% csrf_token %}
+                            <button type="submit" class="list-group-item list-group-item-action text-danger border-0 w-100 text-start">
+                                <i class="fas fa-sign-out-alt me-2"></i> Logout
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>

@@ -31,7 +31,7 @@ def home(request):
 
 def menu_list(request):
     """Legacy menu list view - kept for backward compatibility"""
-    return redirect('restaurant:modern_menu')
+    return redirect('restaurant:menu')
 
 def modern_menu(request):
     """Modern menu view with enhanced UI"""
@@ -255,7 +255,7 @@ def checkout(request):
     cart = request.session.get('cart', {})
     if not cart:
         messages.error(request, 'Your cart is empty')
-        return redirect('restaurant:modern_menu')
+        return redirect('restaurant:menu')
     
     try:
         # Get or create a customer for the current user
@@ -309,7 +309,7 @@ def checkout(request):
         
     except Exception as e:
         messages.error(request, f'Error processing your order: {str(e)}')
-        return redirect('restaurant:modern_menu')
+        return redirect('restaurant:menu')
 
 @login_required
 def order_history(request):
@@ -329,7 +329,7 @@ def order_history(request):
         return render(request, 'restaurant/order_history.html', context)
     except Customer.DoesNotExist:
         messages.error(request, 'Customer profile not found.')
-        return redirect('restaurant:modern_menu')
+        return redirect('restaurant:menu')
 
 def register(request):
     if request.user.is_authenticated:
