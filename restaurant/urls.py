@@ -4,6 +4,7 @@ from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import get_user_model
 from . import views
+from . import views_order_management
 
 # Custom Authentication Form that uses email instead of username
 class EmailAuthenticationForm(AuthenticationForm):
@@ -32,6 +33,27 @@ urlpatterns = [
     
     # Order History
     path('orders/', views.order_history, name='order_history'),
+    
+    # Enhanced Order Management
+    path('orders/create/', views_order_management.create_order_view, name='create_order'),
+    path('orders/<int:order_id>/', views_order_management.order_detail_view, name='order_detail'),
+    path('orders/<int:order_id>/update-status/', views_order_management.update_order_status_view, name='update_order_status'),
+    path('orders/<int:order_id>/cancel/', views_order_management.cancel_order_view, name='cancel_order'),
+    
+    # Kitchen Management
+    path('kitchen/queue/', views_order_management.kitchen_queue_view, name='kitchen_queue'),
+    path('kitchen/orders/<int:order_id>/preparing/', views_order_management.mark_order_preparing, name='mark_order_preparing'),
+    path('kitchen/orders/<int:order_id>/ready/', views_order_management.mark_order_ready, name='mark_order_ready'),
+    
+    # Order Status Views
+    path('orders/ready/', views_order_management.ready_orders_view, name='ready_orders'),
+    path('orders/pending/', views_order_management.pending_orders_view, name='pending_orders'),
+    path('tables/<int:table_id>/orders/', views_order_management.table_orders_view, name='table_orders'),
+    
+    # API Endpoints for AJAX
+    path('api/kitchen/queue/', views_order_management.api_kitchen_queue, name='api_kitchen_queue'),
+    path('api/orders/<int:order_id>/status/', views_order_management.api_order_status, name='api_order_status'),
+    path('api/tables/<int:table_id>/status/', views_order_management.api_table_status, name='api_table_status'),
     
     # Authentication URLs
     path('login/', auth_views.LoginView.as_view(

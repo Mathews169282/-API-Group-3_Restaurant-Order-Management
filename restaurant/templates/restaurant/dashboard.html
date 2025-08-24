@@ -153,9 +153,23 @@
                         <a href="{% url 'restaurant:menu' %}" class="list-group-item list-group-item-action">
                             <i class="fas fa-utensils me-2 text-primary"></i> Browse Menu
                         </a>
-                        <a href="#" class="list-group-item list-group-item-action">
+                        <a href="{% url 'restaurant:order_history' %}" class="list-group-item list-group-item-action">
                             <i class="fas fa-history me-2 text-primary"></i> Order History
                         </a>
+                        {% if user.is_staff %}
+                        <a href="{% url 'restaurant:create_order' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-plus-circle me-2 text-success"></i> Create Order
+                        </a>
+                        <a href="{% url 'restaurant:kitchen_queue' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-fire me-2 text-warning"></i> Kitchen Queue
+                        </a>
+                        <a href="{% url 'restaurant:pending_orders' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-clock me-2 text-info"></i> Pending Orders
+                        </a>
+                        <a href="{% url 'restaurant:ready_orders' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-check-circle me-2 text-success"></i> Ready Orders
+                        </a>
+                        {% endif %}
                         <a href="#" class="list-group-item list-group-item-action">
                             <i class="fas fa-cog me-2 text-primary"></i> Account Settings
                         </a>

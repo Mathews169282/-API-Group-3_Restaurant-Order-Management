@@ -1,0 +1,263 @@
+{% extends 'restaurant/base.html' %}
+{% load humanize %}
+
+{% block title %}Kitchen Queue - Restaurant Order System{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-fire me-2 text-orange"></i>Kitchen Queue</h2>
+                <div class="d-flex gap-2">
+                    <button id="refreshBtn" class="btn btn-outline-primary">
+                        <i class="fas fa-sync-alt me-1"></i> Refresh
+                    </button>
+                    <div class="badge bg-info fs-6">{{ kitchen_orders|length }} orders</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if kitchen_orders %}
+        <div id="kitchen-orders" class="row">
+            {% for order_data in kitchen_orders %}
+            <div class="col-xl-4 col-lg-6 mb-4">
+                <div class="card kitchen-order-card" data-order-id="{{ order_data.order_id }}">
+                    <div class="card-header {% if order_data.status == 'CONFIRMED' %}bg-info text-white{% elif order_data.status == 'PREPARING' %}bg-warning text-dark{% endif %}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="fas fa-receipt me-1"></i>
+                                {{ order_data.order_number }}
+                            </h5>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-light text-dark">
+                                    Table {{ order_data.table_number }}
+                                </span>
+                                <span class="time-elapsed" data-created="{{ order_data.created_at|date:'c' }}">
+                                    {{ order_data.time_elapsed.seconds|floatformat:0 }}m
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-body">
+                        <div class="customer-info mb-3">
+                            <strong><i class="fas fa-user me-1"></i>{{ order_data.customer_name }}</strong>
+                        </div>
+                        
+                        <!-- Order Items by Category -->
+                        <div class="order-items">
+                            {% for category, items in order_data.items_by_category.items %}
+                            <div class="category-section mb-3">
+                                <h6 class="category-header text-muted">{{ category }}</h6>
+                                <div class="items-list">
+                                    {% for item in items %}
+                                    <div class="item-row d-flex justify-content-between align-items-start mb-2">
+                                        <div class="item-details">
+                                            <span class="item-quantity badge bg-secondary">{{ item.quantity }}x</span>
+                                            <span class="item-name">{{ item.name }}</span>
+                                            {% if item.special_instructions %}
+                                            <div class="special-instructions text-muted small">
+                                                <i class="fas fa-sticky-note me-1"></i>{{ item.special_instructions }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        {% if order_data.notes %}
+                        <div class="order-notes mt-3 p-2 bg-light rounded">
+                            <small class="text-muted">
+                                <i class="fas fa-comment me-1"></i>{{ order_data.notes }}
+                            </small>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="card-footer">
+                        <div class="d-flex gap-2">
+                            {% if order_data.status == 'CONFIRMED' %}
+                            <button class="btn btn-warning btn-sm flex-fill start-preparing-btn" 
+                                    data-order-id="{{ order_data.order_id }}">
+                                <i class="fas fa-play me-1"></i> Start Preparing
+                            </button>
+                            {% elif order_data.status == 'PREPARING' %}
+                            <button class="btn btn-success btn-sm flex-fill mark-ready-btn" 
+                                    data-order-id="{{ order_data.order_id }}">
+                                <i class="fas fa-check me-1"></i> Mark Ready
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <div class="mb-4">
+                <i class="fas fa-utensils fa-4x text-muted"></i>
+            </div>
+            <h4 class="text-muted">No orders in kitchen queue</h4>
+            <p class="text-muted">New orders will appear here when they're confirmed.</p>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.kitchen-order-card {
+    border: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease-in-out;
+}
+
+.kitchen-order-card:hover {
+    transform: translateY(-2px);
+}
+
+.category-header {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 5px;
+    margin-bottom: 10px;
+}
+
+.item-row {
+    padding: 5px 0;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.item-row:last-child {
+    border-bottom: none;
+}
+
+.item-quantity {
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.item-name {
+    font-weight: 500;
+}
+
+.special-instructions {
+    font-style: italic;
+    margin-top: 4px;
+    padding-left: 15px;
+}
+
+.time-elapsed {
+    font-weight: 600;
+    color: #fff;
+    background: rgba(0,0,0,0.2);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+}
+
+.text-orange {
+    color: #fd7e14 !important;
+}
+
+.btn-sm {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+}
+
+.order-notes {
+    border-left: 3px solid #007bff;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Start preparing buttons
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('start-preparing-btn') || e.target.closest('.start-preparing-btn')) {
+            const btn = e.target.classList.contains('start-preparing-btn') ? e.target : e.target.closest('.start-preparing-btn');
+            const orderId = btn.dataset.orderId;
+            markOrderPreparing(orderId, btn);
+        }
+    });
+    
+    // Mark ready buttons
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('mark-ready-btn') || e.target.closest('.mark-ready-btn')) {
+            const btn = e.target.classList.contains('mark-ready-btn') ? e.target : e.target.closest('.mark-ready-btn');
+            const orderId = btn.dataset.orderId;
+            markOrderReady(orderId, btn);
+        }
+    });
+    
+    function markOrderPreparing(orderId, button) {
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Processing...';
+        
+        fetch(`/kitchen/orders/${orderId}/preparing/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert(data.error || 'Failed to update order');
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-play me-1"></i> Start Preparing';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Network error occurred');
+            button.disabled = false;
+            button.innerHTML = '<i class="fas fa-play me-1"></i> Start Preparing';
+        });
+    }
+    
+    function markOrderReady(orderId, button) {
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Processing...';
+        
+        fetch(`/kitchen/orders/${orderId}/ready/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert(data.error || 'Failed to update order');
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-check me-1"></i> Mark Ready';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Network error occurred');
+            button.disabled = false;
+            button.innerHTML = '<i class="fas fa-check me-1"></i> Mark Ready';
+        });
+    }
+});
+</script>
+
+{% csrf_token %}
+{% endblock %}

@@ -38,11 +38,13 @@ def modern_menu(request):
     # Debug: Print all categories and items
     all_categories = MenuCategory.objects.all()
     print("All Categories:", [c.name for c in all_categories])
+    print("Total categories count:", all_categories.count())
     
     # Get active categories with their active items
     categories = []
     for category in all_categories:
         items = category.items.filter(is_active=True).order_by('name')
+        print(f"Category '{category.name}': {items.count()} active items")
         if items.exists():
             categories.append({
                 'id': category.id,
@@ -51,6 +53,7 @@ def modern_menu(request):
             })
     
     print(f"Found {len(categories)} active categories with items")
+    print("User authenticated:", request.user.is_authenticated)
     
     # Get cart data from session
     cart = request.session.get('cart', {})
@@ -75,10 +78,23 @@ def dashboard(request):
         customer = Customer.objects.get(email=request.user.email)
     except Customer.DoesNotExist:
         # Create a new customer if one doesn't exist
+        # Generate a proper name from user fields
+        user_name = ""
+        if hasattr(request.user, 'first_name') and request.user.first_name:
+            user_name += request.user.first_name
+        if hasattr(request.user, 'last_name') and request.user.last_name:
+            if user_name:
+                user_name += " "
+            user_name += request.user.last_name
+        
+        # Fall back to email or username if no name available
+        if not user_name.strip():
+            user_name = request.user.email.split('@')[0] if request.user.email else request.user.username
+        
         customer = Customer.objects.create(
             email=request.user.email,
-            name=f"{request.user.first_name} {request.user.last_name}".strip() or request.user.username,
-            phone=request.user.phone or ''
+            name=user_name,
+            phone=getattr(request.user, 'phone', '') or ''
         )
     
     # Get recent orders for the customer
